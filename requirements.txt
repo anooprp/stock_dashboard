@@ -1,0 +1,6 @@
+dash
+plotly
+requests
+pandas
+numpy
+scikit-learn
