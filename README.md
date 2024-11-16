@@ -1,2 +1,2 @@
 # stock_dashboard
-To display realtime stock price and predict
+To showcase real-time stock prices and provide predictions
