@@ -3,8 +3,8 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 from layout import create_layout
 from graph import prepare_graph_data
-#from prediction.lstm import *
-from data_fetcher import  *
+import pandas as pd
+from data_fetcher import fetch_stock_data,initialize_database
 from fundamentals import display_fundamentals
 
 # Initialize the Dash app
@@ -14,22 +14,60 @@ app = dash.Dash(__name__)
 tickers = ["AAPL", "GOOG", "MSFT"]
 
 # Set the layout of the app
-app.layout = create_layout(tickers)
+app.layout = create_layout()
 
 # Initialize the database
 initialize_database()
 
 @app.callback(
-    Output('stock-price-graph', 'figure'),
-    Output('fundamentals', 'children'),
-    [Input('refresh-button', 'n_clicks')],
+    [Output('stock-price-graph', 'figure'),
+     Output('fundamentals', 'children'),
+     Output('selected-period', 'data'),
+     Output('selected-period-display', 'children'),
+     Output('3mo-button', 'className'),
+     Output('6mo-button', 'className'),
+     Output('1y-button', 'className'),
+     Output('2y-button', 'className'),
+     Output('5y-button', 'className'),
+     Output('ytd-button', 'className')],
+    [Input('3mo-button', 'n_clicks'),
+     Input('6mo-button', 'n_clicks'),
+     Input('1y-button', 'n_clicks'),
+     Input('2y-button', 'n_clicks'),
+     Input('5y-button', 'n_clicks'),
+     Input('ytd-button', 'n_clicks')],
     [State('ticker-input', 'value'),
-     State('time-period-dropdown', 'value')]
+     State('selected-period', 'data')]
 )
+def update_graph_and_fundamentals_on_refresh(n_clicks_3mo, n_clicks_6mo, n_clicks_1y, n_clicks_2y, n_clicks_5y, n_clicks_ytd, selected_ticker, current_period):
+    ctx = dash.callback_context
 
-def update_graph_and_fundamentals_on_refresh(n_clicks, selected_ticker, selected_period):
-    if n_clicks is None:
+    if not ctx.triggered:
         raise dash.exceptions.PreventUpdate
+
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
+    if button_id == '3mo-button':
+        selected_period = '3mo'
+        period_text = "3 Months"
+    elif button_id == '6mo-button':
+        selected_period = '6mo'
+        period_text = "6 Months"
+    elif button_id == '1y-button':
+        selected_period = '1y'
+        period_text = "1 Year"
+    elif button_id == '2y-button':
+        selected_period = '2y'
+        period_text = "2 Years"
+    elif button_id == '5y-button':
+        selected_period = '5y'
+        period_text = "5 Years"
+    elif button_id == 'ytd-button':
+        selected_period = 'ytd'
+        period_text = "Year to Date"
+    else:
+        selected_period = current_period
+        period_text = "1 Year"  # Default text
 
     # Fetch stock data and predictions
     stock_data, fundamentals, predictions, future_predictions = fetch_stock_data(selected_ticker, selected_period)
@@ -102,7 +140,17 @@ def update_graph_and_fundamentals_on_refresh(n_clicks, selected_ticker, selected
     fundamentals_display = display_fundamentals(fundamentals, selected_ticker)
     print('prepared fundamentals and created the chart')
 
-    # Return graph and fundamentals
+    # Determine button classes
+    button_classes = {
+        '3mo-button': 'me-1 period-button active' if selected_period == '3mo' else 'me-1 period-button',
+        '6mo-button': 'me-1 period-button active' if selected_period == '6mo' else 'me-1 period-button',
+        '1y-button': 'me-1 period-button active' if selected_period == '1y' else 'me-1 period-button',
+        '2y-button': 'me-1 period-button active' if selected_period == '2y' else 'me-1 period-button',
+        '5y-button': 'me-1 period-button active' if selected_period == '5y' else 'me-1 period-button',
+        'ytd-button': 'me-1 period-button active' if selected_period == 'ytd' else 'me-1 period-button'
+    }
+
+    # Return graph, fundamentals, selected period, period text, and button classes
     return {
         'data': graph_data,
         'layout': go.Layout(
@@ -113,8 +161,7 @@ def update_graph_and_fundamentals_on_refresh(n_clicks, selected_ticker, selected
             legend=dict(orientation="h", x=0, y=-0.2),
             margin=dict(l=40, r=40, t=40, b=40),
         )
-    }, fundamentals_display
-
+    }, fundamentals_display, selected_period, f"Selected Period: {period_text}", button_classes['3mo-button'], button_classes['6mo-button'], button_classes['1y-button'], button_classes['2y-button'], button_classes['5y-button'], button_classes['ytd-button']
 
 if __name__ == '__main__':
     app.run_server(debug=True)
