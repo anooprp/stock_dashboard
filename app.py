@@ -1,10 +1,11 @@
 import dash
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 from layout import create_layout
-from graph import prepare_graph_data
+from graph import prepare_graph_data_v1,prepare_graph_data
 from prediction.lstm import *
-from data_fetcher import fetch_yahoo_data, fetch_yahoo_fundamentals, fetch_alpha_vantage_fundamentals
+from prediction.database_handler import *
+from data_fetcher import  *
 from fundamentals import display_fundamentals
 
 # Initialize the Dash app
@@ -16,23 +17,21 @@ tickers = ["AAPL", "GOOG", "MSFT"]
 # Set the layout of the app
 app.layout = create_layout(tickers)
 
+# Initialize the database
+initialize_database()
+
 @app.callback(
     Output('stock-price-graph', 'figure'),
     Output('fundamentals', 'children'),
-    [Input('ticker-input', 'value'),
-     Input('time-period-dropdown', 'value')]
+    [Input('refresh-button', 'n_clicks')],
+    [State('ticker-input', 'value'),
+     State('time-period-dropdown', 'value')]
 )
-def update_graph_and_fundamentals(selected_ticker, selected_period):
-    # Fetch stock data and fundamentals
-    stock_data = fetch_yahoo_data([selected_ticker], period=selected_period)
-    fundamentals = fetch_yahoo_fundamentals(selected_ticker)
+def update_graph_and_fundamentals_on_refresh(n_clicks, selected_ticker, selected_period):
+    if n_clicks is None:
+        raise dash.exceptions.PreventUpdate
 
-    # Fetch Alpha Vantage fundamentals if any value is 'N/A'
-    if any(value == 'N/A' for value in fundamentals.values()):
-        alpha_fundamentals = fetch_alpha_vantage_fundamentals(selected_ticker)
-        for key, value in fundamentals.items():
-            if value == 'N/A':
-                fundamentals[key] = alpha_fundamentals.get(key, 'N/A')
+    stock_data, fundamentals = fetch_stock_data(selected_ticker, selected_period)
 
     # Prepare the graph data
     graph_data = prepare_graph_data([selected_ticker], selected_period)
@@ -88,7 +87,6 @@ def update_graph_and_fundamentals(selected_ticker, selected_period):
                    'title': f'{selected_ticker} Stock Price, Moving Averages, and Predictions'
                }
            }, fundamentals_display
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)

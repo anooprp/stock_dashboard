@@ -5,6 +5,7 @@ from data_fetcher import fetch_yahoo_data
 def prepare_graph_data(tickers, period):
     data = []
     for ticker in tickers:
+
         stock_data = fetch_yahoo_data([ticker], period=period)[ticker]
 
         # Stock price trace
@@ -51,3 +52,4 @@ def prepare_graph_data(tickers, period):
         data.extend(golden_buy_points)
 
     return data
+

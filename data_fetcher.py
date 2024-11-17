@@ -1,5 +1,6 @@
 import yfinance as yf
 import requests
+from prediction.database_handler import *
 
 ALPHA_VANTAGE_API_KEY = 'YOUR_API_KEY_HERE'
 
@@ -54,3 +55,26 @@ def fetch_alpha_vantage_fundamentals(ticker):
         "Analyst Target Price": data.get('AnalystTargetPrice', 'N/A'),
     }
     return fundamentals
+
+
+def fetch_stock_data(tickers, period='1y'):
+    stock_data, fundamentals = fetch_data_from_db(tickers, period)
+    if fundamentals:
+        return stock_data, fundamentals
+    else:
+        # Fetch fresh data
+        print("Generating Data using API's")
+        stock_data = fetch_yahoo_data([tickers], period=period)
+        fundamentals = fetch_yahoo_fundamentals(tickers)
+
+        # Fetch Alpha Vantage fundamentals if any value is 'N/A'
+        if any(value == 'N/A' for value in fundamentals.values()):
+            alpha_fundamentals = fetch_alpha_vantage_fundamentals(tickers)
+            for key, value in fundamentals.items():
+                if value == 'N/A':
+                    fundamentals[key] = alpha_fundamentals.get(key, 'N/A')
+
+        # Save the fetched data to the database
+        save_data_to_db(tickers, period, stock_data, fundamentals)
+        return stock_data, fundamentals
+
