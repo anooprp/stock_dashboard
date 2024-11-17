@@ -1,7 +1,7 @@
 import yfinance as yf
 import requests
 
-ALPHA_VANTAGE_API_KEY = 'SB518DJOBJZ52OTZ'
+ALPHA_VANTAGE_API_KEY = 'YOUR_API_KEY_HERE'
 
 def fetch_yahoo_data(tickers, period='1y'):
     data = {}
