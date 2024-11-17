@@ -2,9 +2,8 @@ import dash
 from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 from layout import create_layout
-from graph import prepare_graph_data_v1,prepare_graph_data
+from graph import prepare_graph_data
 from prediction.lstm import *
-from prediction.database_handler import *
 from data_fetcher import  *
 from fundamentals import display_fundamentals
 
