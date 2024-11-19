@@ -8,3 +8,5 @@ yfinance
 tensorflow
 matplotlib
 dash_bootstrap_components
+black
+pylint
